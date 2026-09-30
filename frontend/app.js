@@ -5,6 +5,7 @@ const details = document.getElementById("details");
 const submitButton = document.getElementById("submit");
 const statusEl = document.getElementById("status");
 const results = document.getElementById("results");
+const collapseToggle = document.getElementById("collapse-toggle");
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -22,6 +23,22 @@ function renderList(id, items) {
   );
 }
 
+function setFormExpanded(expanded) {
+  document.body.classList.toggle("form-expanded", expanded);
+  collapseToggle.hidden = !document.body.classList.contains("has-results");
+  collapseToggle.setAttribute("aria-expanded", String(expanded));
+  collapseToggle.setAttribute(
+    "aria-label",
+    expanded ? "Collapse client details" : "Expand client details",
+  );
+
+  if (expanded) {
+    details.focus();
+  } else {
+    details.blur();
+  }
+}
+
 function showSummary(data) {
   document.getElementById("client-name").textContent = data.client_name;
   document.getElementById("headline").textContent = data.headline;
@@ -31,7 +48,14 @@ function showSummary(data) {
   renderList("contacts", data.contacts);
   renderList("next-steps", data.next_steps);
   results.hidden = false;
+  document.body.classList.add("has-results");
+  setFormExpanded(false);
 }
+
+collapseToggle.addEventListener("click", () => {
+  const expanded = !document.body.classList.contains("form-expanded");
+  setFormExpanded(expanded);
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -44,6 +68,8 @@ form.addEventListener("submit", async (event) => {
 
   submitButton.disabled = true;
   results.hidden = true;
+  document.body.classList.remove("has-results", "form-expanded");
+  collapseToggle.hidden = true;
   setStatus("Retrieving client information...");
 
   try {

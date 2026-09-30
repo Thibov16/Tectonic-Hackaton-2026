@@ -23,12 +23,36 @@
 
       <form class="panel" id="client-form">
         <label for="details">Client details</label>
-        <textarea
-          id="details"
-          name="details"
-          required
-          placeholder="Example: Acme Manufacturing in Antwerp, about 400 employees, looking at payroll and absence."
-        ></textarea>
+        <div class="details-row">
+          <button
+            type="button"
+            class="collapse-toggle"
+            id="collapse-toggle"
+            aria-expanded="false"
+            aria-controls="details"
+            aria-label="Expand client details"
+            hidden
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <path
+                d="M5.2 7.5 10 12.3l4.8-4.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <div class="details-field">
+            <textarea
+              id="details"
+              name="details"
+              required
+              placeholder="Example: Acme Manufacturing in Antwerp, about 400 employees, looking at payroll and absence."
+            ></textarea>
+          </div>
+        </div>
         <div class="actions">
           <button type="submit" id="submit">Get client summary</button>
           <p class="status" id="status" aria-live="polite"></p>
