@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from keywords import ExtractedKeywords, extract_keywords
+
 app = FastAPI(title="SD Worx Client Insight API")
 
 app.add_middleware(
@@ -16,6 +18,20 @@ class ClientQuery(BaseModel):
     details: str = Field(min_length=1, description="Everything the user knows about the client")
 
 
+class ExtractedKeywordsOut(BaseModel):
+    """Meaningful terms pulled from the user's free-text request."""
+
+    client: list[str] = Field(default_factory=list, description="Company / account names")
+    location: list[str] = Field(default_factory=list, description="Cities, regions, countries")
+    timeframe: list[str] = Field(default_factory=list, description="Dates, quarters, relative periods")
+    industry: list[str] = Field(default_factory=list, description="Sector / industry signals")
+    employee_count: str | None = Field(default=None, description="Headcount if mentioned")
+    topics: list[str] = Field(default_factory=list, description="HR/payroll themes of interest")
+    contacts: list[str] = Field(default_factory=list, description="Roles or stakeholders mentioned")
+    other: list[str] = Field(default_factory=list, description="Other useful leftover terms")
+    all: list[str] = Field(default_factory=list, description="Flat deduplicated keyword list")
+
+
 class ClientSummary(BaseModel):
     client_name: str
     industry: str
@@ -24,6 +40,7 @@ class ClientSummary(BaseModel):
     highlights: list[str]
     contacts: list[str]
     next_steps: list[str]
+    extracted_keywords: ExtractedKeywordsOut
 
 
 SAMPLE_CLIENTS = [
@@ -94,6 +111,37 @@ FALLBACK = {
 }
 
 
+def _keywords_out(extracted: ExtractedKeywords) -> ExtractedKeywordsOut:
+    payload = extracted.to_dict()
+    payload["all"] = extracted.all_terms()
+    return ExtractedKeywordsOut(**payload)
+
+
+def _name_tokens(name: str) -> list[str]:
+    return [part for part in name.replace("-", " ").split() if len(part) > 1]
+
+
+def _match_client(details: str, extracted: ExtractedKeywords) -> dict | None:
+    """Score sample clients using extracted terms, then fall back to raw substring match."""
+    search_terms = {term.casefold() for term in extracted.all_terms()}
+    # Also include individual tokens from client names for partial hits ("Acme")
+    for name in extracted.client:
+        search_terms.update(part.casefold() for part in _name_tokens(name))
+
+    lowered = details.casefold()
+    best: dict | None = None
+    best_score = 0
+    for client in SAMPLE_CLIENTS:
+        score = sum(1 for keyword in client["keywords"] if keyword in search_terms)
+        # Raw details catch aliases the extractor might miss
+        score += sum(1 for keyword in client["keywords"] if keyword in lowered)
+        if score > best_score:
+            best_score = score
+            best = client
+
+    return best if best_score > 0 else None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -105,16 +153,30 @@ def client_insight(payload: ClientQuery) -> ClientSummary:
     if not details:
         raise HTTPException(status_code=400, detail="Client details are required.")
 
-    lowered = details.lower()
-    match = next(
-        (client for client in SAMPLE_CLIENTS if any(word in lowered for word in client["keywords"])),
-        None,
-    )
+    extracted = extract_keywords(details)
+    keywords_out = _keywords_out(extracted)
+    match = _match_client(details, extracted)
 
     if match:
         data = {key: value for key, value in match.items() if key != "keywords"}
+        data["extracted_keywords"] = keywords_out
         return ClientSummary(**data)
 
     fallback = FALLBACK.copy()
+    # Prefer an extracted company name over the generic unmatched label
+    if extracted.client:
+        fallback["client_name"] = extracted.client[0]
+    if extracted.industry:
+        fallback["industry"] = extracted.industry[0]
     fallback["summary"] = f"{FALLBACK['summary']}\n\nYour notes:\n{details}"
+    fallback["extracted_keywords"] = keywords_out
     return ClientSummary(**fallback)
+
+
+@app.post("/api/extract-keywords", response_model=ExtractedKeywordsOut)
+def extract_keywords_endpoint(payload: ClientQuery) -> ExtractedKeywordsOut:
+    """Standalone keyword extraction for the free-text client request."""
+    details = payload.details.strip()
+    if not details:
+        raise HTTPException(status_code=400, detail="Client details are required.")
+    return _keywords_out(extract_keywords(details))
