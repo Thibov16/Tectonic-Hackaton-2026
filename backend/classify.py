@@ -14,6 +14,7 @@ import csv
 import io
 import re
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from db import (
@@ -509,6 +510,91 @@ def industry_for_client(client_name: str | None, extracted_industry: list[str]) 
     return extracted_industry[0] if extracted_industry else None
 
 
+def _normalize_iso_date(value: str) -> str | None:
+    text = value.strip().strip("\"'")
+    if not text:
+        return None
+    # Already ISO-ish
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})", text)
+    if match:
+        return match.group(1)
+    # Compact yyyymmdd
+    match = re.match(r"^(\d{4})(\d{2})(\d{2})$", text)
+    if match:
+        return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+    try:
+        return parsedate_to_datetime(text).date().isoformat()
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def extract_source_date(path: Path, body: str, meta: dict[str, str]) -> str | None:
+    """Best-effort document date from metadata, headers, filename, or content."""
+    # 1) Explicit metadata fields (prefer most recent / most authoritative)
+    for key in (
+        "date",
+        "effective",
+        "approval_date",
+        "approved",
+        "signed",
+        "updated",
+        "created",
+    ):
+        if key in meta:
+            parsed = _normalize_iso_date(meta[key])
+            if parsed:
+                return parsed
+
+    # 2) Email Date: header
+    email_date = re.search(r"^Date:\s*(.+)$", body, flags=re.IGNORECASE | re.MULTILINE)
+    if email_date:
+        parsed = _normalize_iso_date(email_date.group(1))
+        if parsed:
+            return parsed
+
+    # 3) Filename containing YYYY-MM-DD or YYYY_MM_DD
+    name_date = re.search(r"(20\d{2})[-_](\d{2})[-_](\d{2})", path.stem)
+    if name_date:
+        return f"{name_date.group(1)}-{name_date.group(2)}-{name_date.group(3)}"
+
+    # 4) Meeting/transcript "Date: 2026-06-09"
+    inline_date = re.search(
+        r"^Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})",
+        body,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    if inline_date:
+        return inline_date.group(1)
+
+    # 5) First chat timestamp YYYY-MM-DD
+    chat_date = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", body)
+    if chat_date:
+        return chat_date.group(1)
+
+    return None
+
+
+def extract_doc_status(meta: dict[str, str], body: str, path: Path) -> str | None:
+    if "status" in meta and meta["status"]:
+        status = meta["status"].strip().upper()
+        if status and "NOT STATED" not in status and status not in {"-", "N/A", "UNKNOWN"}:
+            # Keep only the primary token (e.g. CURRENT from "CURRENT (INCOMPLETE)")
+            primary = re.split(r"[\s(/]", status, maxsplit=1)[0]
+            return primary or status
+    stem = path.stem.casefold()
+    if "draft" in stem:
+        return "DRAFT"
+    if re.search(r"\bDRAFT\b", body):
+        return "DRAFT"
+    if re.search(r"\bSUPERSEDED\b", body, flags=re.IGNORECASE):
+        return "SUPERSEDED"
+    if re.search(r"\bSIGNED\b", body):
+        return "SIGNED"
+    if re.search(r"\bstatus:\s*CURRENT\b", body, flags=re.IGNORECASE):
+        return "CURRENT"
+    return None
+
+
 def classify_file(path: Path, data_dir: Path) -> dict:
     body = read_file_text(path)
     meta = parse_metadata(body)
@@ -528,6 +614,8 @@ def classify_file(path: Path, data_dir: Path) -> dict:
     tags = infer_tags(body, extracted.topics, extracted.contacts, source_type)
     summary = build_summary(body, tags, client_name)
     industry = industry_for_client(client_name, extracted.industry)
+    source_date = extract_source_date(path, body, meta)
+    doc_status = extract_doc_status(meta, body, path)
 
     entities = {
         "people": extracted.contacts,
@@ -540,6 +628,8 @@ def classify_file(path: Path, data_dir: Path) -> dict:
         "employee_count": extracted.employee_count,
         "industry": industry,
         "metadata": meta,
+        "source_date": source_date,
+        "doc_status": doc_status,
     }
 
     title = path.stem.replace("_", " ")
@@ -574,6 +664,8 @@ def classify_file(path: Path, data_dir: Path) -> dict:
         "title": title,
         "body": body,
         "aliases": aliases,
+        "source_date": source_date,
+        "doc_status": doc_status,
     }
 
 
@@ -655,11 +747,16 @@ def run_classification(*, data_dir: Path, db_path: Path) -> dict[str, int]:
             classified_at=now,
             client_id=client_id,
             client_status=client_status,
+            source_date=result.get("source_date"),
+            doc_status=result.get("doc_status"),
         )
         stats["processed"] += 1
         print(
             f"{stored_path}: source={result['source_type']} "
-            f"client={result['client_name'] or 'UNRESOLVED'} tags={result['tags']}"
+            f"client={result['client_name'] or 'UNRESOLVED'} "
+            f"date={result.get('source_date') or '-'} "
+            f"status={result.get('doc_status') or '-'} "
+            f"tags={result['tags']}"
         )
 
     conn.close()

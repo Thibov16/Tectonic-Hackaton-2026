@@ -31,11 +31,14 @@ CREATE TABLE IF NOT EXISTS documents (
     summary TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '[]',
     entities TEXT NOT NULL DEFAULT '{}',
+    source_date TEXT,
+    doc_status TEXT,
     classified_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_documents_client_id ON documents(client_id);
 CREATE INDEX IF NOT EXISTS idx_documents_source_type ON documents(source_type);
+CREATE INDEX IF NOT EXISTS idx_documents_source_date ON documents(source_date);
 """
 
 
@@ -50,6 +53,12 @@ def connect(db_path: Path | str | None = None) -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
+    # Lightweight migrations for existing knowledge.db files
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(documents)").fetchall()}
+    if "source_date" not in columns:
+        conn.execute("ALTER TABLE documents ADD COLUMN source_date TEXT")
+    if "doc_status" not in columns:
+        conn.execute("ALTER TABLE documents ADD COLUMN doc_status TEXT")
     conn.commit()
 
 
@@ -83,10 +92,11 @@ def row_to_client(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def row_to_document(row: sqlite3.Row, *, include_body: bool = True) -> dict[str, Any]:
+    keys = set(row.keys())
     doc = {
         "id": row["id"],
         "client_id": row["client_id"],
-        "client_name": row["client_name"] if "client_name" in row.keys() else None,
+        "client_name": row["client_name"] if "client_name" in keys else None,
         "client_status": row["client_status"],
         "source_type": row["source_type"],
         "file_path": row["file_path"],
@@ -94,6 +104,8 @@ def row_to_document(row: sqlite3.Row, *, include_body: bool = True) -> dict[str,
         "summary": row["summary"],
         "tags": _loads_list(row["tags"]),
         "entities": _loads_dict(row["entities"]),
+        "source_date": row["source_date"] if "source_date" in keys else None,
+        "doc_status": row["doc_status"] if "doc_status" in keys else None,
         "classified_at": row["classified_at"],
     }
     if include_body:
@@ -167,13 +179,15 @@ def upsert_document(
     classified_at: str,
     client_id: int | None,
     client_status: str,
+    source_date: str | None = None,
+    doc_status: str | None = None,
 ) -> int:
     conn.execute(
         """
         INSERT INTO documents (
             client_id, client_status, source_type, file_path, title, body,
-            summary, tags, entities, classified_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            summary, tags, entities, source_date, doc_status, classified_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(file_path) DO UPDATE SET
             client_id = excluded.client_id,
             client_status = excluded.client_status,
@@ -183,6 +197,8 @@ def upsert_document(
             summary = excluded.summary,
             tags = excluded.tags,
             entities = excluded.entities,
+            source_date = excluded.source_date,
+            doc_status = excluded.doc_status,
             classified_at = excluded.classified_at
         """,
         (
@@ -195,6 +211,8 @@ def upsert_document(
             summary,
             json.dumps(tags),
             json.dumps(entities),
+            source_date,
+            doc_status,
             classified_at,
         ),
     )
@@ -275,6 +293,55 @@ def search_documents(
         needle = tag.casefold()
         docs = [doc for doc in docs if any(t.casefold() == needle for t in doc["tags"])]
     return docs
+
+
+def search_documents_by_terms(
+    conn: sqlite3.Connection,
+    terms: list[str],
+    *,
+    client_id: int | None = None,
+    include_body: bool = True,
+    limit: int = 40,
+) -> list[dict[str, Any]]:
+    """Find documents matching any of the search terms (OR), optionally scoped to a client."""
+    cleaned = [term.strip() for term in terms if term and len(term.strip()) >= 2]
+    if not cleaned and client_id is None:
+        return []
+
+    sql = _document_select_sql() + " WHERE 1=1"
+    params: list[Any] = []
+
+    if client_id is not None:
+        # Client-linked docs plus keyword hits from the wider corpus
+        sql += " AND (d.client_id = ?"
+        params.append(client_id)
+        if cleaned:
+            clauses = []
+            for term in cleaned:
+                like = f"%{term}%"
+                clauses.append(
+                    "(d.title LIKE ? OR d.summary LIKE ? OR d.body LIKE ? OR d.tags LIKE ?)"
+                )
+                params.extend([like, like, like, like])
+            sql += " OR (" + " OR ".join(clauses) + ")"
+        sql += ")"
+    elif cleaned:
+        clauses = []
+        for term in cleaned:
+            like = f"%{term}%"
+            clauses.append(
+                "(d.title LIKE ? OR d.summary LIKE ? OR d.body LIKE ? OR d.tags LIKE ?)"
+            )
+            params.extend([like, like, like, like])
+        sql += " AND (" + " OR ".join(clauses) + ")"
+    else:
+        return []
+
+    sql += " ORDER BY d.classified_at DESC LIMIT ?"
+    params.append(limit)
+
+    rows = conn.execute(sql, params).fetchall()
+    return [row_to_document(row, include_body=include_body) for row in rows]
 
 
 def list_unresolved_documents(

@@ -52,7 +52,7 @@
               id="details"
               name="details"
               required
-              placeholder="Example: Acme Manufacturing in Antwerp, about 400 employees, looking at payroll and absence."
+              placeholder="Example: Janssens Logistics NV — what is the payroll input deadline for September? Also remote work allowance."
             ></textarea>
           </div>
         </div>
@@ -62,26 +62,42 @@
         </div>
       </form>
 
-      <section class="panel results" id="results" hidden>
-        <div class="meta">
-          <span class="chip" id="industry"></span>
-        </div>
-        <h2 id="client-name"></h2>
-        <p class="headline" id="headline"></p>
-        <p class="summary-text" id="summary"></p>
-        <div class="grid">
-          <article>
-            <h2>Highlights</h2>
-            <ul id="highlights"></ul>
-          </article>
-          <article>
-            <h2>Contacts</h2>
-            <ul id="contacts"></ul>
-          </article>
-          <article>
-            <h2>Next steps</h2>
-            <ul id="next-steps"></ul>
-          </article>
+      <section class="results" id="results" hidden>
+        <div class="results-layout">
+          <div class="results-main">
+            <article class="panel sources-block">
+              <h2>Top results</h2>
+              <div id="top-sources" class="top-source-list"></div>
+
+              <div class="more-results" id="more-results" hidden>
+                <p class="more-results-label" id="more-results-label"></p>
+                <button type="button" id="load-more">Load more</button>
+              </div>
+            </article>
+          </div>
+
+          <aside class="panel client-sidebar" id="client-sidebar">
+            <p class="sidebar-label">Client</p>
+            <h2 id="client-name"></h2>
+            <p class="sidebar-industry" id="industry"></p>
+
+            <div class="sidebar-section">
+              <h3>Contacts</h3>
+              <ul id="sidebar-people"></ul>
+            </div>
+            <div class="sidebar-section">
+              <h3>Email</h3>
+              <ul id="sidebar-emails"></ul>
+            </div>
+            <div class="sidebar-section">
+              <h3>Phone</h3>
+              <ul id="sidebar-phones"></ul>
+            </div>
+            <div class="sidebar-section">
+              <h3>Locations</h3>
+              <ul id="sidebar-locations"></ul>
+            </div>
+          </aside>
         </div>
       </section>
     </main>
