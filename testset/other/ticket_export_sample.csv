@@ -1,0 +1,6 @@
+ticket_id,created,customer,country,topic,resolution,resolved_by,reopened
+T-10231,2026-03-02,Janssens Logistics NV,BE,remote allowance,"Paid EUR 160 per contract art 6.1",Jan Vos,no
+T-10298,2026-03-11,Mueller Bau GmbH,DE,sick leave certificate,"Retrieved eAU electronically, no paper needed",Katrin Bauer,no
+T-10377,2026-04-20,Random Customer BE,BE,remote allowance,"Paid EUR 140 (per policy)",Lotte Dewit,yes
+T-10377-R,2026-04-22,Random Customer BE,BE,remote allowance,"Corrected to EUR 151, back pay for 2 months",Sara Claes,no
+T-10455,2026-06-16,Van Dijk Retail BV,NL,input deadline,"10th working day per contract",Tom Willems,no

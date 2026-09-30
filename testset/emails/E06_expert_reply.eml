@@ -1,0 +1,10 @@
+From: Marc Peeters <marc.peeters@sdworx-example.com>
+To: Nina Vermeulen <nina.vermeulen@sdworx-example.com>
+Date: Mon, 15 Jun 2026 08:55:00 +0200
+Subject: RE: Company car correction - KB doesn't work
+
+Hi Nina,
+
+KB-2291 misses a step: before recalculating, you must first set the CO2 reference year manually for the affected periods, otherwise the tool takes the current year's value and overstates the benefit. Then recalc, then compare with the control report. I'll ask the Knowledge Team to fix the article but I haven't had time.
+
+Marc

@@ -1,0 +1,9 @@
+MEETING TRANSCRIPT (auto-generated, lightly edited)
+Title: Payroll Ops Steering - input deadline v5
+Date: 2026-06-09   Attendees: S. Claes, T. Willems, N. Vermeulen, K. Bogaert
+
+Sara: Draft v5 proposes the 15th. Do we roll out to everyone in September?
+Tom: Too risky. Customers have not been informed.
+Sara: Then pilot first. Van Dijk Retail and one Belgian customer volunteer.
+Decision: Pilot from 2026-09-01 with two customers. Full roll-out decision in Q4 2026. v5 stays in draft until then.
+Action: Tom to inform pilot customers. Owner: Tom. Due: 2026-07-15.

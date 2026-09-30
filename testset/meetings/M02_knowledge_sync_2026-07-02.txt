@@ -1,0 +1,9 @@
+MEETING TRANSCRIPT (auto-generated, lightly edited)
+Title: Knowledge Team monthly sync
+Date: 2026-07-02   Attendees: K. Bogaert, M. Peeters, J. Aerts
+
+Kim: Backlog of KB corrections is 41 articles. Top priority?
+Marc: KB-2291. The company car article is missing the CO2 reference year step, I sent a mail to Nina in June.
+Jens: I can do it after the release freeze.
+Kim: Let's say end of August. Jens owns it.
+(Note: by 2026-09-30 KB-2291 has not been updated.)

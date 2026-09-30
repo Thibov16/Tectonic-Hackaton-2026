@@ -1,0 +1,4 @@
+[Teams channel: Payroll DE]
+2025-11-21 09:30 Katrin B.: for Mueller Bau we don't ask for paper certificates anymore, the employer retrieves the electronic one (eAU) from the health insurer
+2025-11-21 09:32 Markus W.: is that in a procedure somewhere?
+2025-11-21 09:33 Katrin B.: no, not yet. POL-DE-003 is outdated. Nobody owns the update

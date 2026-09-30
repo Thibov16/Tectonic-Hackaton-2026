@@ -1,0 +1,7 @@
+[Teams channel: Payroll BE - General] (export)
+2026-02-03 10:11 Lotte D.: quick q, what's the remote allowance again? 140?
+2026-02-03 10:13 Jan V.: yes 140, it's been like that forever
+2026-02-03 10:13 Pieter S.: +1
+2026-02-03 10:14 Hanne T.: +1
+2026-02-03 10:20 Sara C.: @Lotte it's 151 since 1 July 2025, see POL-HR-017 v3.0
+2026-02-03 10:21 Lotte D.: oh. thanks, will correct the payslip preview
