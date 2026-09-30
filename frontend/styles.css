@@ -334,6 +334,18 @@ button:disabled {
   font-weight: 600;
 }
 
+.chip-muted {
+  background: #1a2440;
+  color: #c9d4ef;
+}
+
+.source-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .sources-block {
   margin-top: 0;
 }

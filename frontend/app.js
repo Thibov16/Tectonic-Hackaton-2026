@@ -74,11 +74,22 @@ function createResultCard(doc, { open = false } = {}) {
   title.className = "top-source-title";
   title.textContent = doc.title;
 
-  const badge = document.createElement("span");
-  badge.className = "chip";
-  badge.textContent = doc.age_label || doc.source_type;
+  const badges = document.createElement("span");
+  badges.className = "source-badges";
 
-  summaryEl.append(title, badge);
+  const typeBadge = document.createElement("span");
+  typeBadge.className = "chip";
+  typeBadge.textContent = doc.source_type;
+  badges.appendChild(typeBadge);
+
+  if (doc.age_label) {
+    const ageBadge = document.createElement("span");
+    ageBadge.className = "chip chip-muted";
+    ageBadge.textContent = doc.age_label;
+    badges.appendChild(ageBadge);
+  }
+
+  summaryEl.append(title, badges);
 
   const meta = document.createElement("p");
   meta.className = "source-meta";
