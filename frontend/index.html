@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SD Worx Client Portal</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">SD <span>Worx</span></div>
+        <p>Client insight portal</p>
+      </div>
+    </header>
+
+    <main>
+      <h1>Look up a client</h1>
+      <p class="lede">
+        Enter everything you know about the organisation: name, sector, sites,
+        employee count, current HR or payroll setup, or open questions.
+      </p>
+
+      <form class="panel" id="client-form">
+        <label for="details">Client details</label>
+        <textarea
+          id="details"
+          name="details"
+          required
+          placeholder="Example: Acme Manufacturing in Antwerp, about 400 employees, looking at payroll and absence."
+        ></textarea>
+        <div class="actions">
+          <button type="submit" id="submit">Get client summary</button>
+          <p class="status" id="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <section class="panel results" id="results" hidden>
+        <div class="meta">
+          <span class="chip" id="industry"></span>
+        </div>
+        <h2 id="client-name"></h2>
+        <p class="headline" id="headline"></p>
+        <p class="summary-text" id="summary"></p>
+        <div class="grid">
+          <article>
+            <h2>Highlights</h2>
+            <ul id="highlights"></ul>
+          </article>
+          <article>
+            <h2>Contacts</h2>
+            <ul id="contacts"></ul>
+          </article>
+          <article>
+            <h2>Next steps</h2>
+            <ul id="next-steps"></ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      <p>Starter portal for SD Worx client research.</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
