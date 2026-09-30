@@ -62,6 +62,59 @@ main,
   font-size: 0.95rem;
 }
 
+.topnav {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.topnav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.topnav a:hover,
+.topnav a[aria-current="page"] {
+  color: var(--lime);
+}
+
+.client-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.client-item h2 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.client-meta,
+.client-tags {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.doc-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+.doc-list li {
+  margin: 4px 0;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--lime);
+}
+
 main {
   padding: 32px 0 48px;
 }

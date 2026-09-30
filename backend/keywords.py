@@ -12,11 +12,11 @@ LOCATIONS: dict[str, tuple[str, ...]] = {
     "Ghent": ("ghent", "gent"),
     "Liège": ("liège", "liege", "luik"),
     "Leuven": ("leuven", "louvain"),
-    "Mechelen": ("mechelen"),
+    "Mechelen": ("mechelen",),
     "Bruges": ("bruges", "brugge"),
-    "Charleroi": ("charleroi"),
+    "Charleroi": ("charleroi",),
     "Namur": ("namur", "namen"),
-    "Hasselt": ("hasselt"),
+    "Hasselt": ("hasselt",),
     "Wallonia": ("wallonia", "wallonie", "wallonië"),
     "Flanders": ("flanders", "vlaanderen"),
     "Belgium": ("belgium", "belgië", "belgie", "belgian"),
@@ -395,11 +395,12 @@ def _extract_clients(text: str) -> list[str]:
         ),
         # "called Northwind Retail"
         (r"(?:called|named)\s+([A-Z][\w&.'-]*(?:\s+[A-Z][\w&.'-]*){0,4})", 1, 0),
-        # "Acme Manufacturing NV" / "Contoso bv" / "Northwind Retail Group"
+        # "Acme Manufacturing NV" / "Contoso Logistics BV" / "Northwind Retail Group"
+        # Title-case company tokens; suffix matched case-insensitively.
         (
-            rf"\b([A-Za-z][\w&.'-]*(?:\s+[A-Za-z][\w&.'-]*){{0,4}}\s+(?:{suffix_alt}))\b",
+            rf"\b([A-Z][\w&.'-]*(?:[ \t]+[A-Z][\w&.'-]*){{0,4}}[ \t]+(?i:{suffix_alt}))\b",
             1,
-            re.IGNORECASE,
+            0,
         ),
         # "Acme Manufacturing in Antwerp" / "Contoso BV based in Leuven"
         (
@@ -415,15 +416,20 @@ def _extract_clients(text: str) -> list[str]:
             if cleaned:
                 clients.append(cleaned)
 
-    # Title-case multi-word names (case-sensitive pass for proper nouns)
-    for match in re.finditer(r"\b([A-Z][a-zA-Z&.'-]+(?:\s+[A-Z][a-zA-Z&.'-]+){1,3})\b", text):
+    # Title-case multi-word names (case-sensitive; do not cross newlines)
+    for match in re.finditer(r"\b([A-Z][a-zA-Z&.'-]+(?:[ \t]+[A-Z][a-zA-Z&.'-]+){1,3})\b", text):
         phrase = match.group(1)
         words = phrase.split()
         if all(w.casefold() in STOPWORDS or w.casefold() in MONTHS or w.casefold() in CLIENT_FILLERS for w in words):
             continue
         if phrase in LOCATIONS or phrase in INDUSTRIES:
             continue
-        cleaned = _clean_client_name(phrase)
+        # Drop trailing industry/location labels glued onto a company name
+        while words and (words[-1] in INDUSTRIES or words[-1] in LOCATIONS):
+            words.pop()
+        if len(words) < 2:
+            continue
+        cleaned = _clean_client_name(" ".join(words))
         if cleaned:
             clients.append(cleaned)
 

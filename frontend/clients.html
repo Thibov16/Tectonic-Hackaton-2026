@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clients — SD Worx Client Portal</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">SD <span>Worx</span></div>
+        <nav class="topnav">
+          <a href="/app/">Lookup</a>
+          <a href="/clients" aria-current="page">Clients</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <h1>Classified clients</h1>
+      <p class="lede">
+        Clients resolved from the knowledge database after running
+        <code>classify.py</code> on <code>testset/</code>.
+      </p>
+
+      <p class="status" id="status" aria-live="polite">Loading clients…</p>
+
+      <div class="panel" id="clients-panel" hidden>
+        <ul class="client-list" id="client-list"></ul>
+      </div>
+    </main>
+
+    <footer class="page-footer">
+      <p>Data from <code>GET /api/clients</code>.</p>
+    </footer>
+
+    <script src="/app/clients.js"></script>
+  </body>
+</html>
